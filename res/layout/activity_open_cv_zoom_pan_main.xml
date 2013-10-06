@@ -1,14 +1,23 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    xmlns:opencv="http://schemas.android.com/apk/res-auto"    
+    xmlns:opencv="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/ir_open_cv_cam_main_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <com.ngohgia.ecube.opencvzoompan.CamControlView
+    <com.ngohgia.ecube.iropencvcampreview.CamControlView
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:visibility="gone"
         android:id="@+id/cam_control_zoom_pan_preview"
         opencv:show_fps="true"
         opencv:camera_id="any" />
+    
+	<LinearLayout
+        android:id="@+id/ir_grid_tbl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:orientation="vertical">	        
+    </LinearLayout>   
 </FrameLayout>
