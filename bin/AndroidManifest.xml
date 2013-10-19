@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.ngohgia.ecube.iropencvcampreview"
+    package="com.ngohgia.ecube.iropencvcamarduino"
     android:versionCode="1"
     android:versionName="1.0" >
 
@@ -10,7 +10,7 @@
                       android:largeScreens="true"
                       android:anyDensity="true" />
 
-    <uses-sdk android:minSdkVersion="8" />
+    <uses-sdk android:minSdkVersion="10" android:targetSdkVersion="18"/>
 
     <uses-permission android:name="android.permission.CAMERA"/>
 
@@ -24,16 +24,23 @@
         android:label="@string/app_name"
 		android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         <activity
-            android:name="com.ngohgia.ecube.iropencvcampreview.IROpenCvPreviewMainActivity"
+            android:name="com.ngohgia.ecube.iropencvcamarduino.IROpenCvArduinoMainActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape"
             android:configChanges="keyboardHidden|orientation">            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+			
+			<intent-filter>
+				<action android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED" />
+			</intent-filter>
+
+			<meta-data android:name="android.hardware.usb.action.USB_ACCESSORY_ATTACHED"
+				android:resource="@xml/accessory_filter" />
         </activity>
+        <uses-library android:name="com.android.future.usb.accessory"></uses-library>        
     </application>
 
 </manifest>
