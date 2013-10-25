@@ -6,8 +6,8 @@
     android:layout_height="match_parent">
 
     <com.ngohgia.ecube.iropencvcamarduino.CamControlView
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:visibility="gone"
         android:id="@+id/cam_control_zoom_pan_preview"
         opencv:show_fps="true"
@@ -19,5 +19,5 @@
         android:layout_height="match_parent"
         android:layout_gravity="center"
         android:orientation="vertical">	        
-    </LinearLayout>   
+    </LinearLayout>
 </FrameLayout>
