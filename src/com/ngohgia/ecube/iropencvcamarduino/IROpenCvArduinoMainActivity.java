@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.text.DecimalFormat;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -37,7 +38,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -82,6 +86,19 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private FrameLayout mIRTblParent;
 	private IRGrid mIRGrid;
 	
+	// Variable for GUI
+	private TextView mZoomInput;
+	private TextView mDeltaXInput;
+	private TextView mDeltaYInput;
+	private Button mLockViewBtn;
+	private Button mGetSpecsBtn;
+	
+	
+	private boolean isViewLocked = false;
+	private float touchDeltaX;
+	private float touchDeltaY;
+	private float touchZoomScale;
+	
 	// Variables for the USB Communication
 	private UsbManager mUsbManager;
 	private PendingIntent mPermissionIntent;
@@ -95,6 +112,7 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 	private final byte[] mBuf = new byte[256];
     public final float[] mIRReading = new float[64];
+	DecimalFormat d = new DecimalFormat("#.##");    
     
     // Handler to update GUI
 	private static class myHandler extends Handler {
@@ -111,6 +129,18 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			Bundle bundle = msg.getData();
 			float[] colorVal = bundle.getFloatArray(activity.IR_GRID_VAL_KEY);
 			activity.mIRGrid.updateIRGrid(colorVal, activity.mIRTbl);
+			
+			activity.mZoomInput.setText(activity.d.format(activity.mZoomScale));
+			activity.mDeltaXInput.setText(Integer.toString(activity.mViewX));
+			activity.mDeltaYInput.setText(Integer.toString(activity.mViewY));
+			
+			if (activity.isViewLocked){
+				activity.mLockViewBtn.setText("Unlock View");
+				activity.mGetSpecsBtn.setClickable(true);
+			} else {
+				activity.mLockViewBtn.setText("Lock View");
+				activity.mGetSpecsBtn.setClickable(false);
+			}
 		 };
 	};
 	
@@ -177,6 +207,13 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 		mIRTbl = (LinearLayout) findViewById(R.id.ir_grid_tbl);
 		mIRTblParent = (FrameLayout) findViewById(R.id.ir_open_cv_cam_main_layout);
 		mIRGrid = new IRGrid(this.getApplicationContext(), mIRTbl, mIRTblParent);
+		
+		// Initialize GUI
+		mZoomInput = (TextView) findViewById(R.id.zoom_input);
+		mDeltaXInput = (TextView) findViewById(R.id.delta_x_input);
+		mDeltaYInput = (TextView) findViewById(R.id.delta_y_input);
+		mLockViewBtn = (Button) findViewById(R.id.set_zoom_btn);
+		mGetSpecsBtn = (Button) findViewById(R.id.get_prev_zoom_specs);
 		
 		// Initialize USB Communication
 		mUsbManager = UsbManager.getInstance(this);
@@ -294,36 +331,37 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private void zoomView(float scale){
 		Log.i(LOG_TAG, "Attempt to zoom");
 		float mNewScale = mZoomScale * scale;
+		if (mNewScale < 1.0f)
+			mNewScale = 1.0f;
+		if (mNewScale > 5.0f)
+			mNewScale = 5.0f;
 		
-		// Arbitrary upper zoom scale set as 5.0
-		if (mNewScale < 5.0f){
-			// Determine the displaying submat dimensions
-			int mNewCols = (int) ((float) mViewOriginalCols / mNewScale);
-			int mNewRows = (int) ((float) mViewOriginalRows / mNewScale);
+		// Determine the displaying submat dimensions
+		int mNewCols = (int) ((float) mViewOriginalCols / mNewScale);
+		int mNewRows = (int) ((float) mViewOriginalRows / mNewScale);
+		
+		// Determine the position of the displaying submat on the original Camera view Mat
+		int mNewX = mViewX + mViewCols/2 - mNewCols/2;
+		int mNewY = mViewY + mViewRows/2 - mNewRows/2;
+		
+		// Correct the position of the out of bound submat 
+		if (mNewX < 0)
+			mNewX = 0;
+		if (mNewY < 0)
+			mNewY = 0;
+		
+		// These conditions to update the submat are fail-safe 
+		if (mNewX >= 0 && mNewX <= mViewOriginalCols &&
+			mNewY >= 0 && mNewY <= mViewOriginalRows &&
+			mNewX  + mNewCols >= 0 && mNewX  + mNewCols <= mViewOriginalCols &&
+			mNewY  + mNewRows >= 0 && mNewY  + mNewRows <= mViewOriginalRows){
+			mViewX = mNewX;
+			mViewY = mNewY;
 			
-			// Determine the position of the displaying submat on the original Camera view Mat
-			int mNewX = mViewX + mViewCols/2 - mNewCols/2;
-			int mNewY = mViewY + mViewRows/2 - mNewRows/2;
+			mViewCols = mNewCols;
+			mViewRows = mNewRows;
 			
-			// Correct the position of the out of bound submat 
-			if (mNewX < 0)
-				mNewX = 0;
-			if (mNewY < 0)
-				mNewY = 0;
-			
-			// These conditions to update the submat are fail-safe 
-			if (mNewX >= 0 && mNewX <= mViewOriginalCols &&
-				mNewY >= 0 && mNewY <= mViewOriginalRows &&
-				mNewX  + mNewCols >= 0 && mNewX  + mNewCols <= mViewOriginalCols &&
-				mNewY  + mNewRows >= 0 && mNewY  + mNewRows <= mViewOriginalRows){
-				mViewX = mNewX;
-				mViewY = mNewY;
-				
-				mViewCols = mNewCols;
-				mViewRows = mNewRows;
-				
-				mZoomScale = mNewScale;
-			}
+			mZoomScale = mNewScale;
 		}
 	}
 	
@@ -369,26 +407,29 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
         	Log.i(LOG_TAG, "Original Mat: " + mViewOriginalCols + " x " + mViewOriginalRows);
         }
     	
+        // If the view is unlocked
         // Receive the scrolling and zooming values from the multi-touch handlers
-    	float touchDeltaX = mOpenCvCameraView.getDeltaX();
-    	float touchDeltaY = mOpenCvCameraView.getDeltaY();
-    	float touchZoomScale = mOpenCvCameraView.getZoomScale();
-    	
-    	// Update the displaying submat if the changes from the touch exceeds the threshold
-    	if (Math.abs(touchDeltaX - mLastDeltaX) > EPSILON){
-    		mLastDeltaX = touchDeltaX;
-    		panView(mLastDeltaX, 0.0f);
+        if (isViewLocked == false){
+	    	touchDeltaX = mOpenCvCameraView.getDeltaX();
+	    	touchDeltaY = mOpenCvCameraView.getDeltaY();
+	    	touchZoomScale = mOpenCvCameraView.getZoomScale();
+	    	
+	    	// Update the displaying submat if the changes from the touch exceeds the threshold
+	    	if (Math.abs(touchDeltaX - mLastDeltaX) > EPSILON){
+	    		mLastDeltaX = touchDeltaX;
+	    		panView(mLastDeltaX, 0.0f);
+	    	}
+	    	
+	    	if (Math.abs(touchDeltaY - mLastDeltaY) > EPSILON){
+	    		mLastDeltaY = touchDeltaY;
+	    		panView(0.0f, mLastDeltaY);
+	    	}
+	    	
+	    	if (Math.abs(touchZoomScale - mLastZoomScale) > EPSILON){
+	    		mLastZoomScale = touchZoomScale;
+	    		zoomView(mLastZoomScale);
     	}
-    	
-    	if (Math.abs(touchDeltaY - mLastDeltaY) > EPSILON){
-    		mLastDeltaY = touchDeltaY;
-    		panView(0.0f, mLastDeltaY);
-    	}
-    	
-    	if (Math.abs(touchZoomScale - mLastZoomScale) > EPSILON){
-    		mLastZoomScale = touchZoomScale;
-    		zoomView(mLastZoomScale);
-    	}
+        }
     	
     	Log.i(LOG_TAG, "New View Size: " + mViewCols + " x " + mViewRows);
 		Log.i(LOG_TAG, "New View Pos: " + mViewX + " , " + mViewY);
@@ -436,6 +477,14 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			mFileDescriptor = null;
 			mUsbAccessory = null;
 		}
+	}
+	
+	// Function to toggle the locking of view specs
+	public void toggleViewLock(View view){
+		if (isViewLocked)
+			isViewLocked = false;
+		else
+			isViewLocked = true;
 	}
 	
 	Runnable comRunnable = new Runnable(){
