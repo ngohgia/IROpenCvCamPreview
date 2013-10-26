@@ -16,7 +16,15 @@ public class IRGrid {
 	// Variables concerning the grid
 	private int rows, cols;
 	private ColorPicker mColorPicker = new ColorPicker();
-	private final float GRID_RATIO = 0.226f;	// Width/Length ratio constant of the IR Grid 
+	private final float GRID_RATIO = 0.226f;	// Width/Length ratio constant of the IR Grid
+	
+	// Dimensions of the IR Table
+	private int mIRTblWidth;
+	private int mIRTblHeight;
+	private int mIRTblPaddingTop;
+	
+	// Saturated IR grid
+	private int[][] mIRBinary;
 	
 	// Miscellaneous Variables
 	DecimalFormat d = new DecimalFormat("#.##");
@@ -25,7 +33,25 @@ public class IRGrid {
 		// Set the row and col dimensions of the grid
 		rows = 4;
 		cols = 16;
+		
 		initIRGrid(context, mIRTbl, mIRTblParent);
+		mIRBinary = new int[rows][cols];
+	}
+	
+	public int[][] getIRBinary(){
+		return mIRBinary;
+	}
+	
+	public int getIRTblWidth(){
+		return mIRTblWidth;
+	}
+	
+	public int getIRTblHeight(){
+		return mIRTblHeight;
+	}
+	
+	public int getIRTblPaddingTop(){
+		return mIRTblPaddingTop;
 	}
 	
 	// Initialize the grid following the dimension of the IR grid
@@ -35,9 +61,9 @@ public class IRGrid {
 		ViewTreeObserver mVto = mIRTbl.getViewTreeObserver();
 	    mVto.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
 	    	public boolean onPreDraw() {
-	    		int mIRTblWidth = mIRTblParent.getMeasuredWidth();
-	    		int mIRTblHeight = (int) (mIRTblWidth * GRID_RATIO);
-	    		int mIRTblPaddingTop = (int) ((mIRTblParent.getMeasuredHeight() - mIRTblHeight) * 0.5);
+	    		mIRTblWidth = mIRTblParent.getMeasuredWidth();
+	    		mIRTblHeight = (int) (mIRTblWidth * GRID_RATIO);
+	    		mIRTblPaddingTop = (int) ((mIRTblParent.getMeasuredHeight() - mIRTblHeight) * 0.5);
 	    		Log.i("PADDING", " " + mIRTblPaddingTop);
 	           
 		   		FrameLayout.LayoutParams mIRTblParams = new FrameLayout.LayoutParams(mIRTblWidth, mIRTblHeight);
@@ -81,6 +107,7 @@ public class IRGrid {
 	// Update the grid cells according to the values array passed in
 	public void updateIRGrid(float[] values, LinearLayout mIRTbl){
 		String[] colors = mColorPicker.getColorMatrix(values);
+		updateIRBinary(0.5f, values);
 		
 		int counter = 0;
 		for (int i = 0; i < mIRTbl.getChildCount(); i++){
@@ -94,5 +121,14 @@ public class IRGrid {
 				counter = counter + 1;
 			}
 		}
+	}
+	
+	// Update the saturated IR Grid values: grid cell with value above thres would be saved as 1
+	private void updateIRBinary(float thres, float[] vals){
+		for (int i = 0; i < mIRBinary.length; i++)
+			if (vals[i] > thres)
+				mIRBinary[(i+1)/cols][i%rows] = 1;
+			else
+				mIRBinary[(i+1)/cols][i%rows] = 0;
 	}
 }
