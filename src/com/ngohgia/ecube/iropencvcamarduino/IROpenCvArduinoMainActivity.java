@@ -45,11 +45,13 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class IROpenCvArduinoMainActivity extends Activity implements CvCameraViewListener2 {
 	private final String LOG_TAG = "IROpenCvArduino::Activity";
 	private final String IR_GRID_VAL_KEY = "IR Grid Values";
 	private CamControlView mOpenCvCameraView;
+	private ViewSpecsHandler mViewSpecsHandler;
 	
 	private boolean mReceivedScene = false;
 
@@ -65,12 +67,12 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private int mViewOriginalCols;
 	private int mViewOriginalRows;
 	
-	// Parameters of the displaying submat
-	private float mZoomScale = 1.0f;
+
 	// Dimensions of the displaying submat
 	private int	mViewCols;
 	private int mViewRows;
-	// Position of the displaying submat on the original camera Mat
+	// Parameters of the displaying submat
+	private float mZoomScale = 1.0f;
 	private int mViewX = 0;
 	private int mViewY = 0;
 	
@@ -112,7 +114,7 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private static final String ACTION_USB_PERMISSION = "com.google.android.DemoKit.action.USB_PERMISSION";
 	private final byte[] mBuf = new byte[256];
     public final float[] mIRReading = new float[64];
-	DecimalFormat d = new DecimalFormat("#.##");    
+	DecimalFormat d = new DecimalFormat("#.##");  
     
     // Handler to update GUI
 	private static class myHandler extends Handler {
@@ -136,10 +138,8 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			
 			if (activity.isViewLocked){
 				activity.mLockViewBtn.setText("Unlock View");
-				activity.mGetSpecsBtn.setClickable(true);
 			} else {
 				activity.mLockViewBtn.setText("Lock View");
-				activity.mGetSpecsBtn.setClickable(false);
 			}
 		 };
 	};
@@ -202,6 +202,8 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 		mOpenCvCameraView = (CamControlView) findViewById(R.id.cam_control_zoom_pan_preview);
 		mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
 		mOpenCvCameraView.setCvCameraViewListener(this);
+		
+		mViewSpecsHandler = new ViewSpecsHandler(this);
 		
 		// Initialize the IR Grid and its parent element
 		mIRTbl = (LinearLayout) findViewById(R.id.ir_grid_tbl);
@@ -385,6 +387,16 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 		mViewY = mNewY;
 	}
 	
+	public void loadViewSpecs(View view){
+		String input = mViewSpecsHandler.readSpecs();
+		Toast.makeText(this, "READ VIEW SPECS " + input, Toast.LENGTH_LONG).show();
+		String specs[] = input.split("\t");
+		
+		mZoomScale = Float.parseFloat(specs[0]);
+		mViewX = Integer.parseInt(specs[1]);
+		mViewY = Integer.parseInt(specs[2]);
+	}
+	
 	@Override
 	public Mat onCameraFrame(CvCameraViewFrame inputFrame) {
         mRgba = inputFrame.rgba();
@@ -428,7 +440,7 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	    	if (Math.abs(touchZoomScale - mLastZoomScale) > EPSILON){
 	    		mLastZoomScale = touchZoomScale;
 	    		zoomView(mLastZoomScale);
-    	}
+	    	}
         }
     	
     	Log.i(LOG_TAG, "New View Size: " + mViewCols + " x " + mViewRows);
@@ -483,8 +495,11 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	public void toggleViewLock(View view){
 		if (isViewLocked)
 			isViewLocked = false;
-		else
+		else {
 			isViewLocked = true;
+			mViewSpecsHandler.writeSpecs(mZoomScale, mViewX, mViewY);
+			Toast.makeText(this, "READ VIEW SPECS " + d.format(mZoomScale) + "\t" + Integer.toString(mViewX)+ "\t" + Integer.toString(mViewY), Toast.LENGTH_LONG).show();
+		}
 	}
 	
 	Runnable comRunnable = new Runnable(){

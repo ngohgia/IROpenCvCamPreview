@@ -25,9 +25,11 @@
 	    android:layout_width = "match_parent"
 	    android:layout_height= "wrap_content"
 	    android:gravity="center_horizontal"
-	    android:paddingTop="30sp"
+	    android:paddingTop="5sp"
+	    android:paddingBottom="5sp"
 		android:paddingLeft="25sp"
     	android:paddingRight="25sp"
+    	android:background="@android:color/black"
     	android:layout_gravity="center_horizontal"
 	    android:orientation="horizontal" >	
 		<LinearLayout
@@ -105,12 +107,12 @@
 		    android:layout_height= "wrap_content"
 			android:paddingLeft="25sp"
     		android:paddingRight="25sp"
-    		android:clickable="false"
 		    android:orientation="horizontal" >
 		    <Button
 		        android:id="@+id/get_prev_zoom_specs"
 		        android:layout_width="150sp"
 		        android:layout_height="match_parent"
+		        android:onClick="loadViewSpecs"
 		        android:text="Get Specs" />
 		</LinearLayout>
 	</LinearLayout>
