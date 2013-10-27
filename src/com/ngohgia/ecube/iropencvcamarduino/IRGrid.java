@@ -19,9 +19,9 @@ public class IRGrid {
 	private final float GRID_RATIO = 0.226f;	// Width/Length ratio constant of the IR Grid
 	
 	// Dimensions of the IR Table
-	private int mIRTblWidth;
-	private int mIRTblHeight;
-	private int mIRTblPaddingTop;
+	private static int mIRTblWidth;
+	private static int mIRTblHeight;
+	private static int mIRTblPaddingTop;
 	
 	// Saturated IR grid
 	private int[][] mIRBinary;
@@ -40,6 +40,14 @@ public class IRGrid {
 	
 	public int[][] getIRBinary(){
 		return mIRBinary;
+	}
+	
+	public int getIRTblRows(){
+		return rows;
+	}
+	
+	public int getIRTblCols(){
+		return cols;
 	}
 	
 	public int getIRTblWidth(){
@@ -64,7 +72,6 @@ public class IRGrid {
 	    		mIRTblWidth = mIRTblParent.getMeasuredWidth();
 	    		mIRTblHeight = (int) (mIRTblWidth * GRID_RATIO);
 	    		mIRTblPaddingTop = (int) ((mIRTblParent.getMeasuredHeight() - mIRTblHeight) * 0.5);
-	    		Log.i("PADDING", " " + mIRTblPaddingTop);
 	           
 		   		FrameLayout.LayoutParams mIRTblParams = new FrameLayout.LayoutParams(mIRTblWidth, mIRTblHeight);
 		   		mIRTblParams.setMargins(0, mIRTblPaddingTop, 0, mIRTblPaddingTop);

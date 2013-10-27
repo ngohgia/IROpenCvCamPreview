@@ -1,15 +1,22 @@
 package com.ngohgia.ecube.iropencvcamarduino;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.FileDescriptor;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewFrame;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.core.Mat;
@@ -33,12 +40,15 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -94,12 +104,16 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	private TextView mDeltaYInput;
 	private Button mLockViewBtn;
 	private Button mGetSpecsBtn;
-	
+	private MenuItem mLoadCapturedViewItem = null;
 	
 	private boolean isViewLocked = false;
 	private float touchDeltaX;
 	private float touchDeltaY;
 	private float touchZoomScale;
+	
+	// Resource Manager
+	private CapturedViewResourceManager mCapturedViewManager;
+	private static String mResourceLogFile = "resourceLog.txt";
 	
 	// Variables for the USB Communication
 	private UsbManager mUsbManager;
@@ -196,8 +210,10 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+		getWindow().requestFeature(Window.FEATURE_ACTION_BAR_OVERLAY);
 		
 		setContentView(R.layout.activity_open_cv_zoom_pan_main);
+		getActionBar().setBackgroundDrawable(new ColorDrawable(Color.argb(128, 0, 0, 0)));
 		
 		mOpenCvCameraView = (CamControlView) findViewById(R.id.cam_control_zoom_pan_preview);
 		mOpenCvCameraView.setVisibility(SurfaceView.VISIBLE);
@@ -230,14 +246,12 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			openAccessory(mUsbAccessory);
 		}
 		
-		//Stub
-		/*
-		float[] colorValues = new float[64];
-		for (int i = 0; i < 64; i++){
-			colorValues[i] = (float) Math.random();
-			//Log.e(LOG_TAG, "ColorValues: " + 255 * colorValues[i]);
-		}
-		mIRGrid.updateIRGrid(colorValues, mIRTbl); */
+		//Initialize Resource Manager
+		mCapturedViewManager = new CapturedViewResourceManager();
+		mCapturedViewManager.setMaxViewCount(10);
+		mCapturedViewManager.setIRTblSettings(mIRGrid.getIRTblRows(), mIRGrid.getIRTblCols());
+		mCapturedViewManager.setViewCount(0);
+		writeToFile(mResourceLogFile, mCapturedViewManager.getResourceInfo());
 	}
 
     @SuppressWarnings("deprecation")
@@ -290,6 +304,9 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 		} else {
 			Log.d(LOG_TAG, "mAccessory is null");
 		}
+		
+		String[] resourceInfo = readFromFile(mResourceLogFile);
+		mCapturedViewManager.updateResourceInfoFromFile(resourceInfo);
     }
     
     public void onDestroy() {
@@ -306,14 +323,16 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-		
+		mLoadCapturedViewItem = menu.add("Load Captured Views");
 		return true;
 	}
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
+    	if (item == mLoadCapturedViewItem){
+    		Intent intent = new Intent(this, CapturedViewLoader.class);
+    		startActivity(intent);
+    	}
     	return true;
     }
 
@@ -451,6 +470,23 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
         // Expand the submat to fit the original camera view Mat
     	Imgproc.resize(mIntermediateMat, mRealView, mOriginalSize);
         
+    	if (mOpenCvCameraView.isImageTaken()){
+    		Bitmap tmpBmp = Bitmap.createBitmap(mRealView.cols(), mRealView.rows(), Bitmap.Config.ARGB_8888);
+    		Utils.matToBitmap(mRealView, tmpBmp);   		
+    		Log.i(LOG_TAG, "Image taken of size " + tmpBmp.getHeight() + " x " + tmpBmp.getWidth());
+    		
+            FileOutputStream fos = null;
+            try {
+            	fos = this.openFileOutput("view_img_" + "0" + ".jpg", Context.MODE_PRIVATE);
+            } catch (FileNotFoundException e) {
+            	Log.i(LOG_TAG, "Error writing image to file: " + e.toString());
+            }
+            tmpBmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
+    		
+    		mOpenCvCameraView.setImageUnTaken();
+    	}
+    		
+    	
         return mRealView;
 	}
 	
@@ -544,5 +580,47 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 				mHandler.sendMessage(mGuiMsg);
 		     }
 		}
-	};	
+	};
+	
+	// Function to get data from a file
+	private String[] readFromFile(String fileName){
+		ArrayList<String> info = new ArrayList<String>();		
+		try {
+			InputStream inputStream = openFileInput(fileName);
+			
+			if (inputStream != null){
+				InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
+				BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
+
+				String buf = "";
+				
+				while ((buf = bufferedReader.readLine()) != null){
+					info.add(buf);
+				}
+				
+				inputStream.close();
+			}
+		} catch (FileNotFoundException e){
+			Log.e(LOG_TAG, "File not found: " + e.toString());
+		} catch (IOException e) {
+			Log.e(LOG_TAG, "Can not read file: " + e.toString());
+		}
+		
+		String[] outputArr = new String[info.size()];
+	    outputArr = info.toArray(outputArr);
+		return outputArr;
+	}
+	
+	// Function to write generic String data to a file
+	private void writeToFile(String fileName, byte[] data){
+        try {
+        	Log.i(LOG_TAG, "Prepare to write to " + fileName + " with " + data.toString());
+        	FileOutputStream fos = openFileOutput(fileName, Context.MODE_PRIVATE);
+        	fos.write(data);
+        	fos.close();
+        }
+        catch (IOException e) {
+            Log.e(LOG_TAG, "File writing failed: " + e.toString());
+        } 
+	}
 }
