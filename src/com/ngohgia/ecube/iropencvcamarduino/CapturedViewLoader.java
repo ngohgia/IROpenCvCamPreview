@@ -56,10 +56,7 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 	private int mIRTblHeight;
 	private int mIRTblPaddingTop;
 
-	private int[][] mDeviceTbl = new int[][] {{0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0},
-												{0, 0, 0, 1, 1, 1, 0, 0, 0, 2, 2, 2 , 0, 0, 0, 0},
-												{0, 0, 0, 1, 1, 1, 0, 0, 0, 2, 2, 2 , 0, 0, 0, 0},
-												{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 0, 0, 0}};
+	private int[][] mDeviceTbl;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -72,6 +69,7 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 		mIRTblCols = mCapturedViewManager.getCols();
 		mIRTblRows = mCapturedViewManager.getRows();
 		
+		mDeviceTbl = new int[mIRTblRows][mIRTblCols];
 		/*
 		StringBuilder builder = new StringBuilder();
 		for(String s : resourceInfo) {
@@ -90,43 +88,47 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 		mIRTblParent = (FrameLayout) findViewById(R.id.captured_view_layout);
 	}
 	
-	public void getDevices(){
-   		FrameLayout.LayoutParams mIRTblParams = new FrameLayout.LayoutParams(mIRTblWidth, mIRTblHeight);
-   		mIRTblParams.setMargins(0, mIRTblPaddingTop, 0, mIRTblPaddingTop);
-
-		mIRTbl.setLayoutParams(mIRTblParams);
-				
-   		LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
-		LinearLayout.LayoutParams colParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
-		
-		for (int i = 0; i < mIRTblRows; i++){
-			LinearLayout mTblRow = new LinearLayout(this);
-			mTblRow.setLayoutParams(rowParams);
-			mTblRow.setOrientation(LinearLayout.HORIZONTAL);
-			//mTblRow.setBackgroundResource(R.drawable.grid_cell);
+	public void getDevices(int deviceIdx){
+		getIRTbl(deviceIdx);
+		if (mIRTbl.getChildCount() == 0){		
 			
-			mIRTbl.addView(mTblRow);
-		}
-		
-		for (int i = 0; i < mIRTbl.getChildCount() ; i++){
-			LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
-			for (int k = 0; k < mIRTblCols; k++){
-				Button mIRCell = new Button(this);
-				mIRCell.setLayoutParams(colParams);
+	   		FrameLayout.LayoutParams mIRTblParams = new FrameLayout.LayoutParams(mIRTblWidth, mIRTblHeight);
+	   		mIRTblParams.setMargins(0, mIRTblPaddingTop, 0, mIRTblPaddingTop);
+	
+			mIRTbl.setLayoutParams(mIRTblParams);
+					
+	   		LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f);
+			LinearLayout.LayoutParams colParams = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f);
+			
+			for (int i = 0; i < mIRTblRows; i++){
+				LinearLayout mTblRow = new LinearLayout(this);
+				mTblRow.setLayoutParams(rowParams);
+				mTblRow.setOrientation(LinearLayout.HORIZONTAL);
+				//mTblRow.setBackgroundResource(R.drawable.grid_cell);
 				
-				row.addView(mIRCell);
+				mIRTbl.addView(mTblRow);
 			}
-		}
-		
-		resetIRCellState();
-		
-		for (int i = 0; i < mIRTbl.getChildCount() ; i++){
-			LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
-			for (int k = 0; k < mIRTblCols; k++){
-				Button mIRCell = (Button) row.getChildAt(k);
-				
-				mIRCell.setOnClickListener(new IRCellOnClickListener(this, i, k));
-				mIRCell.setOnLongClickListener(new IRCellOnLongClickListener(this));
+			
+			for (int i = 0; i < mIRTbl.getChildCount() ; i++){
+				LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
+				for (int k = 0; k < mIRTblCols; k++){
+					Button mIRCell = new Button(this);
+					mIRCell.setLayoutParams(colParams);
+					
+					row.addView(mIRCell);
+				}
+			}
+			
+			resetIRCellState();
+			
+			for (int i = 0; i < mIRTbl.getChildCount() ; i++){
+				LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
+				for (int k = 0; k < mIRTblCols; k++){
+					Button mIRCell = (Button) row.getChildAt(k);
+					
+					mIRCell.setOnClickListener(new IRCellOnClickListener(this, i, k));
+					mIRCell.setOnLongClickListener(new IRCellOnLongClickListener(this, i, k));
+				}
 			}
 		}
 	}
@@ -141,7 +143,7 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
     	if (item == mShowDevicesItem){
-    		getDevices();
+    		getDevices(0);
     	}
     	return true;
     }
@@ -204,17 +206,24 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 	}
 	
 	private class IRCellOnLongClickListener implements OnLongClickListener{
+		private int mRow;
+		private int mCol;
 		private Context mContext;
 		
-		public IRCellOnLongClickListener(Context context){
+		public IRCellOnLongClickListener(Context context, int row, int col){
+			mRow = row;
+			mCol = col;
 			mContext = context;
 		}
 		
 		@Override
 		public boolean onLongClick(View arg0) {
-			//Toast.makeText(mContext, "Long tap", Toast.LENGTH_LONG).show();
+			resetIRCellState();
+			int selectedDeviceIdx = getDeviceIndexFromDeviceTbl(mRow, mCol);			
 			
+			setDevicePressed(selectedDeviceIdx);			
 			showDeviceInfoEditDialog();
+			Toast.makeText(mContext, "Device " + selectedDeviceIdx + " to be edited", Toast.LENGTH_LONG).show();
 			return false;
 		}
 	}
@@ -235,15 +244,12 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 			resetIRCellState();
 			
 			int selectedDeviceIdx = getDeviceIndexFromDeviceTbl(mRow, mCol);
-			Toast.makeText(mContext, "Device " + selectedDeviceIdx + " is selected", Toast.LENGTH_LONG).show();
 			
 			if (selectedDeviceIdx != NON_DEVICE_IDX){
-				Button[] selectedIRCells = getIRCellsFromDeviceNo(selectedDeviceIdx);
-				for (int i = 0; i < selectedIRCells.length; i++)
-					setIRCellBg(selectedIRCells[i], R.drawable.ir_cell_bg_pressed);
+				setDevicePressed(selectedDeviceIdx);
+				showDeviceInfoDialog();
+				Toast.makeText(mContext, "Device " + selectedDeviceIdx + " is selected", Toast.LENGTH_LONG).show();
 			}
-			
-			showDeviceInfoDialog();
 		}
 	};
 	
@@ -256,6 +262,12 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 				else
 					mIRCell.setBackgroundResource(Color.TRANSPARENT);
 			}
+	}
+	
+	private void setDevicePressed(int selectedDeviceIdx){
+		Button[] selectedIRCells = getIRCellsFromDeviceNo(selectedDeviceIdx);
+		for (int i = 0; i < selectedIRCells.length; i++)
+			setIRCellBg(selectedIRCells[i], R.drawable.ir_cell_bg_pressed);
 	}
 	
 	private int getDeviceIndexFromDeviceTbl(int row, int col){

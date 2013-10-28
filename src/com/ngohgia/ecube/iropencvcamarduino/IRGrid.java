@@ -24,8 +24,11 @@ public class IRGrid {
 	private static int mIRTblPaddingTop;
 	
 	// Saturated IR grid
-	private int[][] mIRBinary;
-	
+	private int[][] mIRInt  = new int[][]   {{0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1 , 0, 0, 0, 0},
+											{0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 , 1, 0, 0, 0},
+											{0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1 , 1, 0, 0, 0},
+											{0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0 , 1, 0, 0, 0}};
+									
 	// Miscellaneous Variables
 	DecimalFormat d = new DecimalFormat("#.##");
 	
@@ -35,11 +38,10 @@ public class IRGrid {
 		cols = 16;
 		
 		initIRGrid(context, mIRTbl, mIRTblParent);
-		mIRBinary = new int[rows][cols];
 	}
 	
-	public int[][] getIRBinary(){
-		return mIRBinary;
+	public int[][] getIRInt(){
+		return mIRInt;
 	}
 	
 	public int getIRTblRows(){
@@ -114,8 +116,8 @@ public class IRGrid {
 	// Update the grid cells according to the values array passed in
 	public void updateIRGrid(float[] values, LinearLayout mIRTbl){
 		String[] colors = mColorPicker.getColorMatrix(values);
-		updateIRBinary(0.5f, values);
-		
+		updateIRInt(0.5f, values);
+
 		int counter = 0;
 		for (int i = 0; i < mIRTbl.getChildCount(); i++){
 			LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
@@ -131,11 +133,40 @@ public class IRGrid {
 	}
 	
 	// Update the saturated IR Grid values: grid cell with value above thres would be saved as 1
-	private void updateIRBinary(float thres, float[] vals){
-		for (int i = 0; i < mIRBinary.length; i++)
-			if (vals[i] > thres)
-				mIRBinary[(i+1)/cols][i%rows] = 1;
-			else
-				mIRBinary[(i+1)/cols][i%rows] = 0;
+	private void updateIRInt(float thres, float[] vals){
+		int counter = 0;
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++){
+				if (vals[counter] > thres)
+					mIRInt[i][j] = -1;
+				else
+					mIRInt[i][j] = 0;
+				counter = counter + 1;
+			}
+		scanDevice();
+	}
+	
+	// Scan for connected hot spots
+	private void scanDevice(){
+		int devIdx = 0;
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++){
+				if (mIRInt[i][j] == -1){
+					devIdx++;
+					probeHotSpot(i, j, devIdx);
+				}
+			}
+	}
+	
+	// Probe if the cells surrounding cell [i][j] have the same value
+	private void probeHotSpot(int x, int y, int devIdx){
+		mIRInt[x][y] = devIdx;
+		for (int deltaX = -1; deltaX <=1; deltaX++)
+			for (int deltaY = -1; deltaY <=1; deltaY++)
+				if ((deltaX != 0 || deltaY != 0) && 
+					x + deltaX >= 0 && x + deltaX < rows && 
+					y + deltaY >= 0 && y + deltaY < cols &&
+					mIRInt[x+deltaX][y+deltaY] == -1)
+					probeHotSpot(x + deltaX, y + deltaY, devIdx);
 	}
 }

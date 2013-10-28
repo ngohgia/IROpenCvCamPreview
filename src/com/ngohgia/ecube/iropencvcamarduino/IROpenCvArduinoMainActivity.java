@@ -145,6 +145,7 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			Bundle bundle = msg.getData();
 			float[] colorVal = bundle.getFloatArray(activity.IR_GRID_VAL_KEY);
 			activity.mIRGrid.updateIRGrid(colorVal, activity.mIRTbl);
+
 			
 			activity.mZoomInput.setText(activity.d.format(activity.mZoomScale));
 			activity.mDeltaXInput.setText(Integer.toString(activity.mViewX));
@@ -245,6 +246,15 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
 			mUsbAccessory = (UsbAccessory) getLastNonConfigurationInstance();
 			openAccessory(mUsbAccessory);
 		}
+		
+		//Stub
+		/*
+		float[] colorValues = new float[64];
+		for (int i = 0; i < 64; i++){
+			colorValues[i] = (float) Math.random();
+			//Log.e(LOG_TAG, "ColorValues: " + 255 * colorValues[i]);
+		}
+		mIRGrid.updateIRGrid(colorValues, mIRTbl);*/
 		
 		//Initialize Resource Manager
 		mCapturedViewManager = new CapturedViewResourceManager();
@@ -484,6 +494,21 @@ public class IROpenCvArduinoMainActivity extends Activity implements CvCameraVie
             tmpBmp.compress(Bitmap.CompressFormat.PNG, 100, fos);
     		
     		mOpenCvCameraView.setImageUnTaken();
+    		
+    		// Save deviceTbl
+    		int[][] mDeviceGrid = mIRGrid.getIRInt();
+    		int rows = mDeviceGrid.length;
+    		int cols = mDeviceGrid[0].length;
+    		String mDeviceGridLinear = "";
+    		for (int i = 0; i < rows; i++)
+    			for (int j = 0; j < cols; j++){
+    				mDeviceGridLinear += mDeviceGrid[i][j];
+    				if (i < rows-1 || j < cols-1)
+    					mDeviceGridLinear += "\t";
+    			}
+    		Log.i(LOG_TAG, "Captured IRTbl: " + mDeviceGridLinear);
+    		byte[] tmpByte = mDeviceGridLinear.getBytes();
+    		writeToFile("device_grid_view_0.txt", tmpByte);
     	}
     		
     	
