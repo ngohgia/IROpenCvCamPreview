@@ -49,11 +49,12 @@ containing a value of this type.
     public static final class drawable {
         public static final int ecube_logo=0x7f020000;
         public static final int grid_cell=0x7f020001;
-        public static final int ir_cell_bg_normal=0x7f020002;
-        public static final int ir_cell_bg_pressed=0x7f020003;
+        public static final int ic_launcher=0x7f020002;
+        public static final int ir_cell_bg_normal=0x7f020003;
+        public static final int ir_cell_bg_pressed=0x7f020004;
     }
     public static final class id {
-        public static final int action_settings=0x7f05000d;
+        public static final int action_settings=0x7f050011;
         public static final int any=0x7f050000;
         public static final int back=0x7f050001;
         public static final int cam_control_zoom_pan_preview=0x7f050007;
@@ -61,16 +62,22 @@ containing a value of this type.
         public static final int captured_view_layout=0x7f050003;
         public static final int delta_x_input=0x7f050009;
         public static final int delta_y_input=0x7f05000a;
+        public static final int device_info_name=0x7f05000d;
+        public static final int energy_rating_info=0x7f05000f;
+        public static final int energy_saving_info=0x7f050010;
         public static final int front=0x7f050002;
         public static final int get_prev_zoom_specs=0x7f05000c;
         public static final int ir_grid_tbl=0x7f050005;
         public static final int ir_open_cv_cam_main_layout=0x7f050006;
+        public static final int power_rating_info=0x7f05000e;
         public static final int set_zoom_btn=0x7f05000b;
         public static final int zoom_input=0x7f050008;
     }
     public static final class layout {
         public static final int activity_captured_view_loader=0x7f030000;
         public static final int activity_open_cv_zoom_pan_main=0x7f030001;
+        public static final int device_info_dialog=0x7f030002;
+        public static final int device_info_edit_dialog=0x7f030003;
     }
     public static final class menu {
         public static final int captured_view_loader=0x7f090000;
@@ -92,6 +99,17 @@ containing a value of this type.
             res/values-vXX/styles.xml, while customizations related to
             backward-compatibility can go here.
         
+
+        Base application theme for API 11+. This theme completely replaces
+        AppBaseTheme from res/values/styles.xml on API 11+ devices.
+    
+ API 11 theme customizations can go here. 
+
+        Base application theme for API 14+. This theme completely replaces
+        AppBaseTheme from BOTH res/values/styles.xml and
+        res/values-v11/styles.xml on API 14+ devices.
+    
+ API 14 theme customizations can go here. 
          */
         public static final int AppBaseTheme=0x7f080000;
         /**  Application theme. 

@@ -10,13 +10,16 @@ import java.util.ArrayList;
 
 import android.os.Bundle;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
@@ -209,7 +212,9 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 		
 		@Override
 		public boolean onLongClick(View arg0) {
-			Toast.makeText(mContext, "Long tap", Toast.LENGTH_LONG).show();
+			//Toast.makeText(mContext, "Long tap", Toast.LENGTH_LONG).show();
+			
+			showDeviceInfoEditDialog();
 			return false;
 		}
 	}
@@ -237,6 +242,8 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 				for (int i = 0; i < selectedIRCells.length; i++)
 					setIRCellBg(selectedIRCells[i], R.drawable.ir_cell_bg_pressed);
 			}
+			
+			showDeviceInfoDialog();
 		}
 	};
 	
@@ -274,5 +281,63 @@ public class CapturedViewLoader extends Activity implements OnPreDrawListener, O
 	
 	private void setIRCellBg(Button irCell, int resid){
 		irCell.setBackgroundResource(resid);
+	}
+	
+	private void showDeviceInfoEditDialog(){
+		// get prompts.xml view
+		LayoutInflater li = LayoutInflater.from(this);
+		View mDeviceInfoEditDialog= li.inflate(R.layout.device_info_edit_dialog, null);
+
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+
+		alertDialogBuilder.setView(mDeviceInfoEditDialog);
+
+		alertDialogBuilder.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+							  public void onClick(DialogInterface dialog,int id) {
+	
+							    }
+							  })
+						 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+						    public void onClick(DialogInterface dialog,int id) {
+							dialog.cancel();
+						    }
+						  });
+
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+	
+	private void showDeviceInfoDialog(){
+		// get prompts.xml view
+		LayoutInflater li = LayoutInflater.from(this);
+		View mDeviceInfoEditDialog= li.inflate(R.layout.device_info_dialog, null);
+
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+
+		alertDialogBuilder.setView(mDeviceInfoEditDialog);
+
+		alertDialogBuilder.setTitle("Device")
+						  .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+							  public void onClick(DialogInterface dialog,int id) {
+								  dialog.cancel();
+							    }
+							  });
+
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+
+	private void getIRTbl(int viewIdx){
+		String[] tmp = readFromFile("device_grid_view_" + viewIdx + ".txt");
+		String[] parts = tmp[0].split("\t");
+		
+		Log.i(LOG_TAG, "Device grid: " + parts.length);
+
+		if (parts.length == mIRTblRows * mIRTblCols){
+			mDeviceTbl = new int[mIRTblRows][mIRTblCols];
+			for (int i = 0; i < mIRTblRows; i++)
+				for (int j = 0; j < mIRTblCols; j++)
+					mDeviceTbl[i][j] = Integer.parseInt(parts[i*mIRTblCols+j]);
+		}
 	}
 }
