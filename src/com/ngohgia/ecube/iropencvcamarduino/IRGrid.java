@@ -16,8 +16,19 @@ public class IRGrid {
 	// Variables concerning the grid
 	private int rows, cols;
 	private ColorPicker mColorPicker = new ColorPicker();
-	private final float GRID_RATIO = 0.226f;	// Width/Length ratio constant of the IR Grid 
+	private final float GRID_RATIO = 0.226f;	// Width/Length ratio constant of the IR Grid
 	
+	// Dimensions of the IR Table
+	private static int mIRTblWidth;
+	private static int mIRTblHeight;
+	private static int mIRTblPaddingTop;
+	
+	// Saturated IR grid
+	private int[][] mIRInt  = new int[][]   {{0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1 , 0, 0, 0, 0},
+											{0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0 , 1, 0, 0, 0},
+											{0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1 , 1, 0, 0, 0},
+											{0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0 , 1, 0, 0, 0}};
+									
 	// Miscellaneous Variables
 	DecimalFormat d = new DecimalFormat("#.##");
 	
@@ -25,7 +36,32 @@ public class IRGrid {
 		// Set the row and col dimensions of the grid
 		rows = 4;
 		cols = 16;
+		
 		initIRGrid(context, mIRTbl, mIRTblParent);
+	}
+	
+	public int[][] getIRInt(){
+		return mIRInt;
+	}
+	
+	public int getIRTblRows(){
+		return rows;
+	}
+	
+	public int getIRTblCols(){
+		return cols;
+	}
+	
+	public int getIRTblWidth(){
+		return mIRTblWidth;
+	}
+	
+	public int getIRTblHeight(){
+		return mIRTblHeight;
+	}
+	
+	public int getIRTblPaddingTop(){
+		return mIRTblPaddingTop;
 	}
 	
 	// Initialize the grid following the dimension of the IR grid
@@ -35,10 +71,9 @@ public class IRGrid {
 		ViewTreeObserver mVto = mIRTbl.getViewTreeObserver();
 	    mVto.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
 	    	public boolean onPreDraw() {
-	    		int mIRTblWidth = mIRTblParent.getMeasuredWidth();
-	    		int mIRTblHeight = (int) (mIRTblWidth * GRID_RATIO);
-	    		int mIRTblPaddingTop = (int) ((mIRTblParent.getMeasuredHeight() - mIRTblHeight) * 0.5);
-	    		Log.i("PADDING", " " + mIRTblPaddingTop);
+	    		mIRTblWidth = mIRTblParent.getMeasuredWidth();
+	    		mIRTblHeight = (int) (mIRTblWidth * GRID_RATIO);
+	    		mIRTblPaddingTop = (int) ((mIRTblParent.getMeasuredHeight() - mIRTblHeight) * 0.5);
 	           
 		   		FrameLayout.LayoutParams mIRTblParams = new FrameLayout.LayoutParams(mIRTblWidth, mIRTblHeight);
 		   		mIRTblParams.setMargins(0, mIRTblPaddingTop, 0, mIRTblPaddingTop);
@@ -81,7 +116,8 @@ public class IRGrid {
 	// Update the grid cells according to the values array passed in
 	public void updateIRGrid(float[] values, LinearLayout mIRTbl){
 		String[] colors = mColorPicker.getColorMatrix(values);
-		
+		updateIRInt(0.5f, values);
+
 		int counter = 0;
 		for (int i = 0; i < mIRTbl.getChildCount(); i++){
 			LinearLayout row = (LinearLayout) mIRTbl.getChildAt(i);
@@ -94,5 +130,43 @@ public class IRGrid {
 				counter = counter + 1;
 			}
 		}
+	}
+	
+	// Update the saturated IR Grid values: grid cell with value above thres would be saved as 1
+	private void updateIRInt(float thres, float[] vals){
+		int counter = 0;
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++){
+				if (vals[counter] > thres)
+					mIRInt[i][j] = -1;
+				else
+					mIRInt[i][j] = 0;
+				counter = counter + 1;
+			}
+		scanDevice();
+	}
+	
+	// Scan for connected hot spots
+	private void scanDevice(){
+		int devIdx = 0;
+		for (int i = 0; i < rows; i++)
+			for (int j = 0; j < cols; j++){
+				if (mIRInt[i][j] == -1){
+					devIdx++;
+					probeHotSpot(i, j, devIdx);
+				}
+			}
+	}
+	
+	// Probe if the cells surrounding cell [i][j] have the same value
+	private void probeHotSpot(int x, int y, int devIdx){
+		mIRInt[x][y] = devIdx;
+		for (int deltaX = -1; deltaX <=1; deltaX++)
+			for (int deltaY = -1; deltaY <=1; deltaY++)
+				if ((deltaX != 0 || deltaY != 0) && 
+					x + deltaX >= 0 && x + deltaX < rows && 
+					y + deltaY >= 0 && y + deltaY < cols &&
+					mIRInt[x+deltaX][y+deltaY] == -1)
+					probeHotSpot(x + deltaX, y + deltaY, devIdx);
 	}
 }

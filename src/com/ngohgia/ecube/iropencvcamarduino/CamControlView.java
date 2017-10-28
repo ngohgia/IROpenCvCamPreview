@@ -1,8 +1,12 @@
 package com.ngohgia.ecube.iropencvcamarduino;
 
+import java.io.FileOutputStream;
+
 import org.opencv.android.JavaCameraView;
 
 import android.content.Context;
+import android.hardware.Camera;
+import android.hardware.Camera.PictureCallback;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -13,11 +17,14 @@ import android.view.ScaleGestureDetector;
 // Overloaded JavaCameraView class with multi-touch event handler implemented 
 public class CamControlView extends JavaCameraView{
 	private String LOG_TAG = "OpenCvCamZoomPan::TouchControl";
+	private String mPictureFileName;
+	private Boolean mImageTaken = false;
 	
 	private ScaleGestureDetector mScaleGestureDetector;
 	private GestureDetectorCompat mGestureDetector;
 	
 	private float deltaX, deltaY, zoomScale;
+	private Context mContext;
 	
 	// Getters for the Panning amount and Zooming scale
 	public float getDeltaX(){
@@ -32,8 +39,17 @@ public class CamControlView extends JavaCameraView{
 		return zoomScale;
 	}
 	
+	public boolean isImageTaken(){
+		return mImageTaken;
+	}
+	
+	public void setImageUnTaken(){
+		mImageTaken = false;
+	}
+	
 	public CamControlView(Context context, AttributeSet attrs) {
 		super(context, attrs);
+		mContext = context;
 		
         // Sets up interactions
 		mScaleGestureDetector = new ScaleGestureDetector(context, mScaleGestureListener);
@@ -91,5 +107,30 @@ public class CamControlView extends JavaCameraView{
 			deltaY = 2.0f * distanceY;
 			return true;
 		}
+		
+		@Override
+		public boolean onDoubleTap(MotionEvent e){
+			Log.i(LOG_TAG, "Double Tapped");
+			mImageTaken = true;
+			
+			return true;
+		}
 	};
+
+	/*public void onPictureTaken(byte[] data, Camera camera) {
+		Log.i(LOG_TAG, "Saving a bitmap to file");
+		// The camera preview was automatically stopped. Start it again.
+		mCamera.startPreview();
+		mCamera.setPreviewCallback(this);
+		
+		try {
+			FileOutputStream fos = mContext.openFileOutput(mPictureFileName, Context.MODE_PRIVATE);
+			
+			fos.write(data);
+			fos.close();
+		} catch (java.io.IOException e){
+			Log.e("LOG_TAG", "Exception in photoCallback", e);
+		}
+		
+	}*/
 }
