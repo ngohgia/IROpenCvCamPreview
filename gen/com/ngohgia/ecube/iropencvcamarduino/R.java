@@ -51,13 +51,18 @@ containing a value of this type.
         public static final int ic_launcher=0x7f020001;
     }
     public static final class id {
-        public static final int action_settings=0x7f050006;
+        public static final int action_settings=0x7f05000b;
         public static final int any=0x7f050000;
         public static final int back=0x7f050001;
         public static final int cam_control_zoom_pan_preview=0x7f050004;
+        public static final int delta_x_input=0x7f050007;
+        public static final int delta_y_input=0x7f050008;
         public static final int front=0x7f050002;
+        public static final int get_prev_zoom_specs=0x7f05000a;
         public static final int ir_grid_tbl=0x7f050005;
         public static final int ir_open_cv_cam_main_layout=0x7f050003;
+        public static final int set_zoom_btn=0x7f050009;
+        public static final int zoom_input=0x7f050006;
     }
     public static final class layout {
         public static final int activity_open_cv_zoom_pan_main=0x7f030000;
